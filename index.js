@@ -6,6 +6,7 @@ import express from "express";
 import cors from "cors";
 import pokemonsRoutes from "./routes/pokemons.js";
 import authRoutes from "./routes/auth.js";
+import favoritesRoutes from "./routes/favorites.js";
 import connect from "./db/connect.js";
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(cors()); // Permet les requêtes cross-origin (ex: frontend sur un autre
 app.use(express.json());
 app.use(pokemonsRoutes);
 app.use(authRoutes);
+app.use(favoritesRoutes);
 app.use("/assets", express.static("assets")); // Permet d'accéder aux fichiers dans le dossier "assets" via l'URL /assets/...
 
 app.get("/", (req, res) => {
