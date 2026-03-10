@@ -101,3 +101,99 @@ export const deletePokemon = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const getStats = async (req, res) => {
+  try {
+    // Nombre de Pokémon par type
+    const countByType = await Pokemon.aggregate([
+      { $unwind: "$type" },
+      { $group: { _id: "$type", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]);
+
+    // Moyenne des HP par type
+    const avgHPByType = await Pokemon.aggregate([
+      { $unwind: "$type" },
+      {
+        $group: {
+          _id: "$type",
+          avgHP: { $avg: "$base.HP" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { avgHP: -1 } },
+    ]);
+
+    // Pokémon avec le plus d'attaque
+    const maxAttackPokemon = await Pokemon.aggregate([
+      { $sort: { "base.Attack": -1 } },
+      { $limit: 1 },
+      {
+        $project: {
+          id: 1,
+          name: "$name.french",
+          attack: "$base.Attack",
+          type: 1,
+        },
+      },
+    ]);
+
+    // Pokémon avec le plus de HP
+    const maxHPPokemon = await Pokemon.aggregate([
+      { $sort: { "base.HP": -1 } },
+      { $limit: 1 },
+      {
+        $project: {
+          id: 1,
+          name: "$name.french",
+          hp: "$base.HP",
+          type: 1,
+        },
+      },
+    ]);
+
+    // Statistiques globales (index)
+    const globalStats = await Pokemon.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalPokemons: { $sum: 1 },
+          avgAttack: { $avg: "$base.Attack" },
+          avgHP: { $avg: "$base.HP" },
+          avgDefense: { $avg: "$base.Defense" },
+          maxAttack: { $max: "$base.Attack" },
+          maxHP: { $max: "$base.HP" },
+          maxDefense: { $max: "$base.Defense" },
+          minAttack: { $min: "$base.Attack" },
+          minHP: { $min: "$base.HP" },
+          minDefense: { $min: "$base.Defense" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalPokemons: 1,
+          avgAttack: { $round: ["$avgAttack", 2] },
+          avgHP: { $round: ["$avgHP", 2] },
+          avgDefense: { $round: ["$avgDefense", 2] },
+          maxAttack: 1,
+          maxHP: 1,
+          maxDefense: 1,
+          minAttack: 1,
+          minHP: 1,
+          minDefense: 1,
+        },
+      },
+    ]);
+
+    res.json({
+      countByType,
+      avgHPByType,
+      maxAttackPokemon: maxAttackPokemon[0],
+      maxHPPokemon: maxHPPokemon[0],
+      globalStats: globalStats[0],
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
