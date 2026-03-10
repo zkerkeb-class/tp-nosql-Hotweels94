@@ -1,5 +1,19 @@
 import Pokemon from "../model/pokemon.js";
 
+// Fonction utilitaire pour formater les erreurs de validation
+const formatValidationErrors = (error) => {
+  if (error.errors) {
+    // Erreurs de validation Mongoose
+    const validationErrors = {};
+    Object.keys(error.errors).forEach((field) => {
+      validationErrors[field] = error.errors[field].message;
+    });
+    return validationErrors;
+  }
+  // Autres types d'erreurs
+  return { message: error.message };
+};
+
 export const getPokemons = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -68,7 +82,18 @@ export const createPokemon = async (req, res) => {
     const newPokemon = await Pokemon.create(req.body);
     res.status(201).json(newPokemon);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        erreurs: formatValidationErrors(error),
+      });
+    }
+    if (error.code === 11000) {
+      // Erreur d'unicité
+      return res.status(400).json({
+        erreurs: { id: "Un Pokémon avec cet ID existe déjà" },
+      });
+    }
+    res.status(400).json({ erreur: error.message });
   }
 };
 
@@ -77,14 +102,25 @@ export const updatePokemon = async (req, res) => {
     const updatedPokemon = await Pokemon.findOneAndUpdate(
       { id: req.params.id },
       req.body,
-      { new: true },
+      { new: true, runValidators: true },
     );
     if (!updatedPokemon) {
-      return res.status(404).json({ error: "Pokemon not found" });
+      return res.status(404).json({ erreur: "Pokémon non trouvé" });
     }
     res.json(updatedPokemon);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        erreurs: formatValidationErrors(error),
+      });
+    }
+    if (error.code === 11000) {
+      // Erreur d'unicité
+      return res.status(400).json({
+        erreurs: { id: "Un Pokémon avec cet ID existe déjà" },
+      });
+    }
+    res.status(400).json({ erreur: error.message });
   }
 };
 
