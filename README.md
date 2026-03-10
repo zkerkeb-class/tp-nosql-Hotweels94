@@ -1,4 +1,4 @@
-# API Pokédex NoSQL
+# API Pokédex NoSQL Ryan Amsellem--Bousignac
 
 Une API RESTful complète pour gérer une Pokédex avec MongoDB, Mongoose et Express.js. Les utilisateurs peuvent créer des comptes, consulter les Pokémon, gérer leurs favoris et créer des équipes.
 
